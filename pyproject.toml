@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "experimental_video_retrieval"
 version = "0.1.0"
 description = "Experimental video retrieval and deduplication using non-semantic signals"
-readme = "JOURNAL.md"
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "torch>=2.0.0",
