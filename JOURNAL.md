@@ -201,7 +201,7 @@ Train a model to distinguish video trajectories:
 
 - [ ] "Self-Supervised Video Hashing" papers
 - [ ] Video copy detection challenge methods (VCDB, FIVR)
-- [ ] v-JEPA paper: what do they say about learned dynamics?
+- [x] v-JEPA paper: what do they say about learned dynamics? → See 2025-02-20 entry
 - [ ] Temporal segment networks
 - [ ] Video transformers with temporal attention
 
@@ -356,11 +356,82 @@ This is the most work but produces the most convincing evaluation.
 
 ---
 
+## 2025-02-20: V-JEPA 2 Paper Analysis — Gaps in Video Benchmarks
+
+Reviewed V-JEPA 2 paper (arXiv:2506.09985) Table 4 comparing action/object classification across video and image encoders.
+
+### What V-JEPA 2 Benchmarks Cover
+
+| Benchmark | What it Tests | Type |
+|-----------|---------------|------|
+| **SSv2** (Something-Something v2) | Motion understanding ("putting X on Y" vs "taking X off Y") | Motion |
+| **K400** (Kinetics-400) | Action recognition (appearance-heavy — "playing guitar" recognizable from single frame) | Appearance |
+| **COIN** | Procedural activity | Motion |
+| **Diving-48** | Fine-grained sports actions | Motion |
+| **Jester** | Hand gestures | Motion |
+| **ImageNet** | Static object classification | Appearance |
+
+**Key result**: V-JEPA 2 ViT-g achieves 77.3% on SSv2 (motion) vs ~60-65% for image encoders. This validates that temporal modeling matters for *classification*.
+
+### What's Missing — Gaps Relevant to Our Research
+
+#### 1. Temporal Order Sensitivity
+No benchmark directly tests: *Can you distinguish a video from its reverse?*
+
+SSv2 has some order-sensitive classes ("pushing left" vs "pushing right"), but it doesn't test whether models assign **identical representations** to forward vs reversed videos. Our reversal test would expose this gap.
+
+#### 2. Video Retrieval / Deduplication Benchmarks
+All benchmarks in Table 4 are **classification** tasks. None test:
+- Near-duplicate detection
+- Copy detection (VCDB, CC_WEB_VIDEO exist but aren't evaluated)
+- **Hard negative rejection** — the cyclist problem (semantically similar but distinct videos)
+
+Classification asks "what action is this?" — retrieval asks "is this the same video?" Different tasks, different failure modes.
+
+#### 3. Shared-Content Discrimination
+No benchmark tests: *Two videos pass through Central Park — are they duplicates?*
+
+Our **shared-segment confusion curve** would be a novel contribution. Current benchmarks assume videos have different content; they don't stress-test overlapping content with different trajectories.
+
+#### 4. Trajectory / Path Understanding
+SSv2 tests action direction, but not:
+- Does the model encode the **sequence of scene transitions**?
+- Can it distinguish A→B→C from D→B→E when B is the same location?
+
+#### 5. Bag-of-Frames Baseline Reporting
+The V-JEPA paper doesn't report: *What does a bag-of-frames baseline achieve?*
+
+If mean-pooled frame embeddings score 70% on K400 (appearance-heavy) but 30% on SSv2 (motion-required), that gap is exactly what our non-semantic signals target. Making this explicit would strengthen the motivation.
+
+### Research Opportunity
+
+Our work fills a gap: **benchmarks for temporal structure beyond classification**.
+
+A retrieval/deduplication benchmark with:
+- True duplicates (re-encodes, crops, resolution changes)
+- Hard negatives (same location, different recordings)
+- Reversal pairs (video + reversed video)
+- Shared-segment pairs (common middle, different start/end)
+
+...would be a genuine contribution. V-JEPA 2 shows motion matters for *classification*, but doesn't prove it matters for *retrieval*. That's our angle.
+
+### Implications for Experiments
+
+1. **Run reversal test on V-JEPA 2** (not just DINOv3) — does its temporal modeling detect reversal?
+2. **Report bag-of-frames baseline** for all our experiments — quantify the gap
+3. **Position our work as retrieval-focused** — complementary to classification benchmarks
+4. **Consider proposing a benchmark** — "Temporal Video Retrieval Challenge" with hard negatives
+
+---
+
 ## Next Steps
 
 1. ~~Set up experimental framework with DINOv3 embeddings~~ ✓
 2. ~~Implement temporal derivative fingerprinting~~ ✓
 3. ~~Create synthetic test cases (same scene, different trajectories)~~ ✓
-4. Get v-JEPA running for prediction residual experiments
-5. Run experiments on real videos to validate hypotheses
-6. Implement temporal FFT of embeddings (Experiment #4)
+4. **Implement video reversal test** ← PRIORITY (elevator pitch demo)
+5. **Implement shared-segment confusion curve** (paper figure)
+6. Get v-JEPA 2 running for prediction residual experiments
+7. Run experiments on real videos to validate hypotheses
+8. Implement temporal FFT of embeddings
+9. Test against CLIP, ImageBind, V-JEPA 2 (not just DINOv3)
